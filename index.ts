@@ -1,27 +1,33 @@
 import assure from './src/assure'
 
-const main = assure(function () {
-  setTimeout(() => {
-    console.log("call async function")
+const main = assure(
+  function () {
     this.resolve(1)
-  }, 500)
-}).then(function (arg) {
-  setTimeout(() => {
-    console.log("call second async function " + arg)
-    this.resolve(2)
-  }, 500)
-}).then(function(arg) {
-  setTimeout(() => {
-    console.log("call third async function " + arg)
-    try {
-      throw new Error("Test");
-      this.resolve(3)
-    } catch(e) {
-      this.reject(e)
+  }
+)
+
+main
+  .then(
+    function (arg) {
+      console.log("subassure1-1 called " + arg)
+      this.resolve(2)
     }
-  }, 500)
-}).then(arg => {
-  console.log("end " + arg)
-}).catch(err => {
-  console.log(err)
-});
+  )
+  .then(
+    function(arg) {
+      console.log("subassure1-2 called " + arg)
+    }
+  )
+
+main
+  .then(
+    function (arg) {
+      console.log("subassure2-1 called " + arg)
+      this.resolve(3)
+    }
+  )
+  .then(
+    function (arg) {
+      console.log("subassure2-2 called " + arg)
+    }
+  )

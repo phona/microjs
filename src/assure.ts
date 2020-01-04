@@ -44,6 +44,12 @@ class Assure {
   public then(onResolved: CallbackFunc, onRejected?: CallbackFunc): Assure {
     const child = new Assure(onResolved, onRejected)
     this.children.push(child)
+
+    if (this.state !== STATE.PENDING) {
+      child.value = this.value;
+      child.process()
+    }
+
     return child
   }
 
