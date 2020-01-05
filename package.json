@@ -14,6 +14,10 @@
     "eslint": "^6.8.0",
     "jest": "^24.9.0",
     "ts-jest": "^24.2.0",
-    "typescript": "^3.7.4"
+    "typescript": "^3.7.4",
+    "xhr-mocklet": "^1.2.3"
+  },
+  "dependencies": {
+    "enum-values": "^1.2.1"
   }
 }

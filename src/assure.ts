@@ -1,3 +1,7 @@
+import request from './request'
+import HTTPStatusCodes from './http-status-codes'
+import { EnumValues } from 'enum-values'
+
 enum STATE {
   PENDING = 0,
   FULFILLED,
@@ -5,13 +9,13 @@ enum STATE {
 }
 
 interface CallbackFunc {
-  (arg?: any): void;
+  (arg: any): void;
 }
 
 class Assure {
   private state: STATE;
   private value: any;
-  private children: Array<Assure>;
+  private children: Assure[];
   private onResolved: CallbackFunc;
   private onRejected: CallbackFunc;
 
@@ -27,6 +31,13 @@ class Assure {
     const assure = new Assure(routine)
     assure.process()
     return assure
+  }
+
+  public reset(): Assure {
+    this.state = STATE.PENDING
+    this.value = null
+    this.children = []
+    return this
   }
 
   public resolve(arg: any): void {
@@ -63,7 +74,13 @@ class Assure {
     if (this.state < STATE.FULFILLED) {
       try {
         if (!(this.value instanceof Error)) {
-          this.onResolved.call(this, this.value)
+          const ret = this.onResolved.call(this, this.value)
+          if (ret instanceof Assure) {
+            ret.then(
+              arg => this.resolve(arg),
+              err => this.reject(err)
+            )
+          }
         } else if (this.onRejected) {
           this.onRejected.call(this, this.value)
         } else {
@@ -90,6 +107,53 @@ class Assure {
   }
 }
 
-export default function (routine: CallbackFunc): Assure {
+class HttpError extends Error {
+  status: number;
+  describe: string;
+
+  constructor(status: number, describe: string) {
+    if (!describe) {
+      describe = EnumValues.getNameFromValue(HTTPStatusCodes, status).split('_').join(' ')
+    }
+    super(describe)
+    this.status = status
+    this.describe = describe
+  }
+}
+
+function wrap(routine: CallbackFunc): Assure {
   return Assure.makeAssureChain(routine)
 }
+
+function get(url: string, params?: string | Record<string, string | number | object>, config?: object): Assure {
+  return wrap(function () {
+    const option = {
+      url,
+      data: params,
+      success: (content: string): void => this.resolve(content),
+      error: (status: number, content: string): void => this.reject(new HttpError(status, content))
+    }
+    for (const k in config) {
+      option[k] = config[k]
+    }
+    request(option)
+  })
+}
+
+function post(url: string, data?: string | Record<string, string | number | object>, config?: object): Assure {
+  return wrap(function () {
+    const option = {
+      url,
+      data: data,
+      method: 'POST',
+      success: (content: string): void => this.resolve(content),
+      error: (status: number, content: string): void => this.reject(new HttpError(status, content))
+    }
+    for (const k in config) {
+      option[k] = config[k]
+    }
+    request(option)
+  })
+}
+
+export default { wrap, get, post }

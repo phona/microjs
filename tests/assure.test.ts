@@ -1,7 +1,8 @@
 import assure from "../src/assure"
+import mock from 'xhr-mocklet'
 
 test('normal use', done => {
-  assure(
+  assure.wrap(
     function () {
       setTimeout(() => {
         this.resolve(1)
@@ -28,7 +29,7 @@ test('normal use', done => {
 })
 
 test('with error', done => {
-  assure(
+  assure.wrap(
     function () {
       setTimeout(() => {
         this.resolve(1)
@@ -71,7 +72,7 @@ test('with error', done => {
 })
 
 test('with children', done => {
-  const main = assure(
+  const main = assure.wrap(
     function () {
       this.resolve(1)
     }
@@ -103,4 +104,64 @@ test('with children', done => {
         done()
       }
     )
+})
+
+mock.setup()
+
+mock.get('http://localhost/api/test', (req, res) => {
+  return res
+    .status(200)
+    .header('Content-Type', 'application/json')
+    .body({
+      lastName: 'John',
+      firstName: 'Smith'
+    });
+});
+
+test('get api normal use', done => {
+  assure.get('http://localhost/api/test')
+    .then(content => {
+      expect(content).toEqual(JSON.stringify({
+        lastName: 'John',
+        firstName: 'Smith'
+      }))
+      done()
+    })
+})
+
+mock.get('http://localhost/api/error', (req, res) => {
+  return res
+    .status(500)
+});
+
+test('get api with error', done => {
+  assure.get('http://localhost/api/error')
+    .then(content => {
+      expect(content).toEqual(JSON.stringify({
+        lastName: 'John',
+        firstName: 'Smith'
+      }))
+    })
+    .catch(err => {
+      expect(err.status).toEqual(500)
+      done()
+    })
+})
+
+test('get api chain', done => {
+  assure.get('http://localhost/api/test')
+    .then(function(content) {
+      expect(content).toEqual(JSON.stringify({
+        lastName: 'John',
+        firstName: 'Smith'
+      }))
+      return assure.get('http://localhost/api/test')
+    })
+    .then(function(content) {
+      expect(content).toEqual(JSON.stringify({
+        lastName: 'John',
+        firstName: 'Smith'
+      }))
+      done()
+    })
 })

@@ -1,33 +1,26 @@
 import assure from './src/assure'
 
-const main = assure(
+assure.wrap(
   function () {
-    this.resolve(1)
+    setTimeout(() => {
+      this.resolve(1)
+    }, 500)
   }
 )
-
-main
   .then(
     function (arg) {
-      console.log("subassure1-1 called " + arg)
-      this.resolve(2)
+      console.log(`call second function with ${arg}`)
+      return assure.wrap(
+        function () {
+          console.log('call wrapped function')
+          setTimeout(() => {
+            this.resolve(2)
+            console.log('call wrapped function')
+          })
+        }
+      )
     }
   )
-  .then(
-    function(arg) {
-      console.log("subassure1-2 called " + arg)
-    }
-  )
-
-main
-  .then(
-    function (arg) {
-      console.log("subassure2-1 called " + arg)
-      this.resolve(3)
-    }
-  )
-  .then(
-    function (arg) {
-      console.log("subassure2-2 called " + arg)
-    }
-  )
+  .then((arg) => {
+    console.log(arg)
+  })
