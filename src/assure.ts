@@ -1,5 +1,5 @@
-import request from './request'
-import HTTPStatusCodes from './http-status-codes'
+import request from './helps/request'
+import HTTPStatusCodes from './helps/http-status-codes'
 import { EnumValues } from 'enum-values'
 
 enum STATE {
@@ -121,11 +121,11 @@ class HttpError extends Error {
   }
 }
 
-function wrap(routine: CallbackFunc): Assure {
+export function wrap(routine: CallbackFunc): Assure {
   return Assure.makeAssureChain(routine)
 }
 
-function get(url: string, params?: string | Record<string, string | number | object>, config?: object): Assure {
+export function get(url: string, params?: string | Record<string, string | number | object>, config?: object): Assure {
   return wrap(function () {
     const option = {
       url,
@@ -140,7 +140,7 @@ function get(url: string, params?: string | Record<string, string | number | obj
   })
 }
 
-function post(url: string, data?: string | Record<string, string | number | object>, config?: object): Assure {
+export function post(url: string, data?: string | Record<string, string | number | object>, config?: object): Assure {
   return wrap(function () {
     const option = {
       url,

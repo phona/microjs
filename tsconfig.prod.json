@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es3",
+    "module": "commonjs",
+    "rootDir": "src",
+    "outDir": "out/prod",
+    "sourceMap": true,
+    "alwaysStrict": true,
+    "types": [],
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "./tests",
+    "./node_modules/@types/"
+  ]
+}

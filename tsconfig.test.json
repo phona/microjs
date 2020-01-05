@@ -1,10 +1,13 @@
 {
   "compilerOptions": {
-    // "target": "es3",
     "target": "es2015",
     "module": "commonjs",
-    "outDir": "out",
+    "outDir": "out/test",
     "sourceMap": true,
     "alwaysStrict": true,
-  }
+  },
+  "include": [
+    "src/**/*",
+    "index.ts"
+  ]
 }

@@ -1,5 +1,5 @@
 import mock from 'xhr-mocklet'
-import request from '../src/request'
+import request from '../src/helps/request'
 
 mock.setup()
 

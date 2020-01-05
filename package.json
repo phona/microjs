@@ -5,14 +5,13 @@
   "license": "MIT",
   "test": "jest",
   "devDependencies": {
-    "@babel/cli": "^7.7.7",
-    "@babel/core": "^7.7.7",
-    "@babel/preset-env": "^7.7.7",
     "@types/jest": "^24.0.25",
     "@typescript-eslint/eslint-plugin": "^2.14.0",
     "@typescript-eslint/parser": "^2.14.0",
+    "browserify": "^16.5.0",
     "eslint": "^6.8.0",
     "jest": "^24.9.0",
+    "tinyify": "^2.5.2",
     "ts-jest": "^24.2.0",
     "typescript": "^3.7.4",
     "xhr-mocklet": "^1.2.3"
