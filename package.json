@@ -17,6 +17,7 @@
     "xhr-mocklet": "^1.2.3"
   },
   "dependencies": {
+    "core-js": "^3.6.1",
     "enum-values": "^1.2.1"
   }
 }

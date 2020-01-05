@@ -58,11 +58,11 @@ function object2FormData(obj: object): string {
 
 class HttpRequest {
   private isTimeout: boolean;
-  private timeoutFlag: number;
+  private timeoutFlag: any;
 
   public constructor() {
     this.isTimeout = false;
-    this.timeoutFlag = -1;
+    this.timeoutFlag = null;
   }
 
   public send(params: {
