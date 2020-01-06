@@ -144,6 +144,7 @@ test('get api with error', done => {
     })
     .catch(err => {
       expect(err.status).toEqual(500)
+      expect(err.describe).toEqual('INTERNAL SERVER ERROR')
       done()
     })
 })

@@ -1,6 +1,5 @@
 import request from './helps/request'
 import HTTPStatusCodes from './helps/http-status-codes'
-import { EnumValues } from 'enum-values'
 
 enum STATE {
   PENDING = 0,
@@ -113,7 +112,7 @@ class HttpError extends Error {
 
   constructor(status: number, describe: string) {
     if (!describe) {
-      describe = EnumValues.getNameFromValue(HTTPStatusCodes, status).split('_').join(' ')
+      describe = HTTPStatusCodes[status].split('_').join(' ') || ''
     }
     super(describe)
     this.status = status

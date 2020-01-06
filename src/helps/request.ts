@@ -40,20 +40,19 @@ function setDefault(obj: Record<string, string>, key: string, value: string): vo
 function noop(): void { }
 
 function object2Querystring(obj: object): string {
-  return Object.keys(obj).reduce(function (str, key, i) {
-    const delimiter = (i === 0) ? '?' : '&';
-    key = encodeURIComponent(key);
-    const val = encodeURIComponent(obj[key]);
-    return [str, delimiter, key, '=', val].join('');
-  }, '');
+  const result = []
+  for (const key in obj) {
+    result.push(`${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
+  }
+  return `?${result.join('&')}`
 }
 
 function object2FormData(obj: object): string {
-  return Object.keys(obj).reduce(function (str, key, i) {
-    const delimiter = (i === 0) ? '' : '&';
-    const val = obj[key];
-    return [str, delimiter, key, '=', val].join('');
-  }, '');
+  const result = []
+  for (const key in obj) {
+    result.push(`${key}=${obj[key]}`)
+  }
+  return `${result.join('&')}`
 }
 
 class HttpRequest {
@@ -85,9 +84,13 @@ class HttpRequest {
       , error = params.error || noop
       , timeout = params.timeout
 
+    const contentType = headers['Content-Type']
+    if (!contentType)
+      headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
+
     let url: string
       , body: string
-    if (method === "GET") {
+    if (method === 'GET') {
       const data = params.data || ''
       const str = typeof data === 'string' ? data : object2Querystring(data)
       url = params.data ? params.url + str : params.url

@@ -16,8 +16,5 @@
     "typescript": "^3.7.4",
     "xhr-mocklet": "^1.2.3"
   },
-  "dependencies": {
-    "core-js": "^3.6.1",
-    "enum-values": "^1.2.1"
-  }
+  "dependencies": {}
 }
