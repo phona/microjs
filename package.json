@@ -1,6 +1,6 @@
 {
-  "name": "microjs",
-  "version": "1.0.0",
+  "name": "@phona/microjs",
+  "version": "1.0.1",
   "main": "index.js",
   "license": "MIT",
   "test": "jest",

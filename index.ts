@@ -1,3 +1,3 @@
 import assure from './src/assure'
 
-export default assure
+export default { assure }
