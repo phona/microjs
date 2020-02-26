@@ -28,7 +28,7 @@ test('normal use', done => {
     )
 })
 
-test('with error', done => {
+test('with error v1', done => {
   assure.wrap(
     function () {
       setTimeout(() => {
@@ -67,6 +67,35 @@ test('with error', done => {
         expect(arg).toBeInstanceOf(Error)
         expect(this.state).toEqual(0)
         done()
+      }
+    )
+})
+
+test('with error v2', done => {
+  assure.wrap(
+    function () {
+      setTimeout(() => {
+        this.resolve(1)
+        expect(this.state).toEqual(1)
+      }, 500)
+    }
+  )
+    .then(
+      function(arg) {
+        expect(arg).toBe(1)
+        setTimeout(() => {
+          this.reject(2)
+        }, 500)
+      }
+    )
+    .then(
+      function(arg) {
+        expect(arg).not.toBe(2);
+        done();
+      },
+      function(arg) {
+        expect(arg).toBe(2);
+        done();
       }
     )
 })

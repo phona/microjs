@@ -1,7 +1,8 @@
 {
   "name": "@phona/microjs",
   "version": "1.0.1",
-  "main": "index.js",
+  "main": "index.ts",
+  "types": "index.d.ts",
   "license": "MIT",
   "test": "jest",
   "devDependencies": {

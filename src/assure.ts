@@ -8,7 +8,7 @@ enum STATE {
 }
 
 interface CallbackFunc {
-  (arg: any): void;
+  (...args: any[]): void;
 }
 
 class Assure {
@@ -64,7 +64,9 @@ class Assure {
   }
 
   public catch(onError: CallbackFunc): Assure {
-    const child = new Assure(null, onError)
+    const child = new Assure(function (...args) {
+      this.resolve(...args);
+    }, onError)
     this.children.push(child)
     return child
   }

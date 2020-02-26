@@ -1,5 +1,6 @@
 import mock from 'xhr-mocklet'
 import request from '../src/helps/request'
+import assure from '../src/assure'
 
 mock.setup()
 
@@ -211,5 +212,51 @@ test('post payload v2', done => {
       }))
       done()
     }
+  })
+})
+
+test('post payload v3', done => {
+  assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then((content) => {
+    expect(content).toEqual(JSON.stringify({
+      user: 'admin',
+      password: 'admin'
+    }))
+    done()
+  })
+})
+
+test('post payload v4', done => {
+  const err = new Error("haha");
+
+  assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then((content) => {
+    throw err;
+  }).catch(error => {
+    expect(error).toEqual(err)
+    done()
+  })
+})
+
+test('post payload v5', done => {
+  const err = new Error("haha");
+
+  assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then((content) => {
+    throw err;
+  }).then((content) => {
+    return 1;
+  }).catch(error => {
+    expect(error).toEqual(err)
+    done()
   })
 })

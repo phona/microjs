@@ -121,9 +121,9 @@ class HttpRequest {
       }
     }
 
-    if (body) {
-      setDefault(headers, 'X-Requested-With', 'XMLHttpRequest')
-    }
+    // if (body) {
+    //   setDefault(headers, 'X-Requested-With', 'XMLHttpRequest')
+    // }
 
     for (const field in headers) {
       req.setRequestHeader(field, headers[field])
