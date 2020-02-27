@@ -138,6 +138,7 @@ test('with children', done => {
 test('reuse', done => {
   assure.wrap<number>(
     function () {
+      console.log("running main")
       for (let i = 0; i < 2; i++) {
         this.resolve(i)
       }
@@ -218,3 +219,69 @@ test('get api chain', done => {
       done()
     })
 })
+
+test('new assure v1', done => {
+  assure.assure<number>((resolve, reject) => {
+    resolve(1)
+  }).then(value => {
+    expect(value).toBe(1)
+    done()
+  })
+})
+
+test('new assure v2', done => {
+  assure.assure<number>((resolve, reject) => {
+    resolve(1)
+  }).then(value => {
+    expect(value).toBe(1)
+    return assure.assure<number>((resolve) => {
+      resolve(2)
+    })
+  }).then(value => {
+    expect(value).toBe(2)
+    done()
+  })
+})
+
+test('new assure v2', done => {
+  assure.assure<number>((resolve, reject) => {
+    reject(new Error("haha"))
+  }).then(v => {
+    expect(v).not.toBe("haha")
+    done()
+  }, e => {
+    expect(e.message).toBe("haha")
+    done()
+  })
+})
+
+/*
+assure((resolve, reject) => {
+  setTimeout(() => {
+    // success
+    resolve(1);
+    // failed
+    reject(new Error("error"));
+  })
+}).then((value) => {
+
+}, (err) => {
+
+})
+
+
+assure.wrap((value) => {
+  let next = assure();
+  setTimeout(() => {
+    // success
+    next.resolve(1);
+    // failed
+    next.reject(new Error("error"));
+  })
+  return next;
+}).then((value) => {
+
+}, (err) => {
+
+})
+*/

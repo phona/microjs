@@ -12,6 +12,73 @@ interface Handler<T> {
   (arg: T): Assure<T> | T | void;
 }
 
+class NewAssure<T> {
+  private value: T | Error | null;
+
+  public constructor(
+    private routine: (
+      resolve: (value: T | void) => void,
+      reject: (error: Error) => void
+    ) => void
+  ) {
+    this.value = null;
+  }
+
+  public then(
+    onResolved: undefined | ((arg: T | null) => NewAssure<T> | T | void),
+    onRejected?: undefined | ((arg: Error | null) => NewAssure<T> | T | void)
+  ): NewAssure<T> {
+    if (this.value === null) {
+      try {
+        this.routine((arg: T) => {
+          this.value = arg
+        }, (e: Error) => {
+          this.value = e
+        })
+      } catch (e) {
+        this.value = e
+      }
+    }
+
+    try {
+      if (this.value instanceof Error) {
+        const result = onRejected(this.value)
+        if (result instanceof NewAssure) {
+          return result
+        } else if (result instanceof Error) {
+          throw result
+        } else {
+          return new NewAssure<T>(resolve => resolve(result))
+        }
+      } else {
+        const result = onResolved(this.value)
+        if (result instanceof NewAssure) {
+          return result
+        } else {
+          return new NewAssure<T>(resolve => resolve(result))
+        }
+      }
+    } catch (e) {
+      return new NewAssure<T>((resolve, reject) => reject(e))
+    }
+  }
+
+  public catch(onError: ((arg: Error | null) => NewAssure<T> | T | void)): NewAssure<T> {
+    try {
+      if (this.value instanceof Error) {
+        const result = onError(this.value)
+        if (result instanceof NewAssure) {
+          return result
+        }
+        return new NewAssure(resolve => resolve(result))
+      }
+    } catch(e) {
+      return new NewAssure<T>((resolve, reject) => reject(e))
+    }
+    return this
+  }
+}
+
 class Assure<T> {
   private state: STATE;
   private value: T | Error;
@@ -149,4 +216,11 @@ export function post(url: string, data?: string | Record<string, string | number
   })
 }
 
-export default { wrap, get, post, HttpError }
+export function assure<T>(func: (
+      resolve: (value: T | void) => void,
+      reject: (error: Error) => void
+    ) => void): NewAssure<T> {
+  return new NewAssure<T>(func)
+}
+
+export default { wrap, get, post, HttpError, assure }
