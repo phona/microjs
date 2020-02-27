@@ -1,5 +1,5 @@
 import request from './helps/request'
-import HTTPStatusCodes from './helps/http-status-codes'
+import HttpError from './helps/http-error'
 
 enum STATE {
   PENDING = 0,
@@ -7,18 +7,19 @@ enum STATE {
   REJECTED,
 }
 
-interface CallbackFunc {
-  (...args: any[]): void;
+// Throwable
+interface Handler<T> {
+  (arg: T): Assure<T> | T | void;
 }
 
-class Assure {
+class Assure<T> {
   private state: STATE;
-  private value: any;
-  private children: Assure[];
-  private onResolved: CallbackFunc;
-  private onRejected: CallbackFunc;
+  private value: T | Error;
+  private children: Assure<T>[];
+  private onResolved: Handler<T>;
+  private onRejected: Handler<Error>;
 
-  public constructor(routine: CallbackFunc, except?: CallbackFunc) {
+  public constructor(routine: Handler<T> | undefined, except?: Handler<Error> | undefined) {
     this.state = STATE.PENDING
     this.value = null
     this.children = []
@@ -26,32 +27,32 @@ class Assure {
     this.onRejected = except
   }
 
-  public static makeAssureChain(routine: CallbackFunc): Assure {
-    const assure = new Assure(routine)
+  public static makeAssureChain<T>(routine: Handler<T>): Assure<T> {
+    const assure = new Assure<T>(routine)
     assure.process()
     return assure
   }
 
-  public reset(): Assure {
+  public reset(): Assure<T> {
     this.state = STATE.PENDING
     this.value = null
     this.children = []
     return this
   }
 
-  public resolve(arg: any): void {
+  public resolve(arg: T): void {
     this.value = arg
     this.state = STATE.FULFILLED
     this.process()
   }
 
-  public reject(arg: any): void {
+  public reject(arg: Error): void {
     this.value = arg
     this.state = STATE.REJECTED
     this.process()
   }
 
-  public then(onResolved: CallbackFunc, onRejected?: CallbackFunc): Assure {
+  public then(onResolved: Handler<T> | undefined, onRejected?: Handler<Error> | undefined): Assure<T> {
     const child = new Assure(onResolved, onRejected)
     this.children.push(child)
 
@@ -63,9 +64,9 @@ class Assure {
     return child
   }
 
-  public catch(onError: CallbackFunc): Assure {
-    const child = new Assure(function (...args) {
-      this.resolve(...args);
+  public catch(onError: Handler<Error>): Assure<T> {
+    const child = new Assure<T>(function (arg: T) {
+      this.resolve(arg);
     }, onError)
     this.children.push(child)
     return child
@@ -74,8 +75,13 @@ class Assure {
   private process(): void {
     if (this.state < STATE.FULFILLED) {
       try {
-        if (!(this.value instanceof Error)) {
+        if (!(this.value instanceof Error) && this.onResolved) {
           const ret = this.onResolved.call(this, this.value)
+
+          if (ret === this) {
+            throw new TypeError("Return value can't be this assure object.")
+          }
+
           if (ret instanceof Assure) {
             ret.then(
               arg => this.resolve(arg),
@@ -108,26 +114,12 @@ class Assure {
   }
 }
 
-class HttpError extends Error {
-  status: number;
-  describe: string;
-
-  constructor(status: number, describe: string) {
-    if (!describe) {
-      describe = HTTPStatusCodes[status].split('_').join(' ') || ''
-    }
-    super(describe)
-    this.status = status
-    this.describe = describe
-  }
-}
-
-export function wrap(routine: CallbackFunc): Assure {
+export function wrap<T>(routine: Handler<T>): Assure<T> {
   return Assure.makeAssureChain(routine)
 }
 
-export function get(url: string, params?: string | Record<string, string | number | object>, config?: object): Assure {
-  return wrap(function () {
+export function get(url: string, params?: string | Record<string, string | number | object>, config?: object): Assure<string> {
+  return wrap<string>(function () {
     const option = {
       url,
       data: params,
@@ -141,8 +133,8 @@ export function get(url: string, params?: string | Record<string, string | numbe
   })
 }
 
-export function post(url: string, data?: string | Record<string, string | number | object>, config?: object): Assure {
-  return wrap(function () {
+export function post(url: string, data?: string | Record<string, string | number | object>, config?: object): Assure<string> {
+  return wrap<string>(function () {
     const option = {
       url,
       data: data,
@@ -157,4 +149,4 @@ export function post(url: string, data?: string | Record<string, string | number
   })
 }
 
-export default { wrap, get, post }
+export default { wrap, get, post, HttpError }

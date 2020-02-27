@@ -1,8 +1,9 @@
 import assure from "../src/assure"
+import HttpError from '../src/helps/http-error'
 import mock from 'xhr-mocklet'
 
 test('normal use', done => {
-  assure.wrap(
+  assure.wrap<number>(
     function () {
       setTimeout(() => {
         this.resolve(1)
@@ -11,7 +12,7 @@ test('normal use', done => {
     }
   )
     .then(
-      function (arg) {
+      function (arg): void {
         expect(arg).toBe(1)
         setTimeout(() => {
           this.resolve(2)
@@ -72,11 +73,10 @@ test('with error v1', done => {
 })
 
 test('with error v2', done => {
-  assure.wrap(
+  assure.wrap<number>(
     function () {
       setTimeout(() => {
         this.resolve(1)
-        expect(this.state).toEqual(1)
       }, 500)
     }
   )
@@ -84,7 +84,7 @@ test('with error v2', done => {
       function(arg) {
         expect(arg).toBe(1)
         setTimeout(() => {
-          this.reject(2)
+          this.reject(new Error("haha"))
         }, 500)
       }
     )
@@ -93,8 +93,8 @@ test('with error v2', done => {
         expect(arg).not.toBe(2);
         done();
       },
-      function(arg) {
-        expect(arg).toBe(2);
+      function(e) {
+        expect(e.message).toBe("haha");
         done();
       }
     )
@@ -135,6 +135,29 @@ test('with children', done => {
     )
 })
 
+test('reuse', done => {
+  assure.wrap<number>(
+    function () {
+      for (let i = 0; i < 2; i++) {
+        this.resolve(i)
+      }
+    }
+  ).then(
+    function (arg) {
+      console.log(arg)
+      switch (arg) {
+        case 0:
+          break;
+        case 1:
+          break;
+        case 2:
+          done()
+          break
+      }
+    }
+  )
+})
+
 mock.setup()
 
 mock.get('http://localhost/api/test', (req, res) => {
@@ -171,7 +194,7 @@ test('get api with error', done => {
         firstName: 'Smith'
       }))
     })
-    .catch(err => {
+    .catch((err: HttpError) => {
       expect(err.status).toEqual(500)
       expect(err.describe).toEqual('INTERNAL SERVER ERROR')
       done()

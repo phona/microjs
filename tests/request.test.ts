@@ -254,7 +254,7 @@ test('post payload v5', done => {
   }).then((content) => {
     throw err;
   }).then((content) => {
-    return 1;
+    return "1";
   }).catch(error => {
     expect(error).toEqual(err)
     done()

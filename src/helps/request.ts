@@ -32,10 +32,6 @@ function getRequest(): XMLHttpRequest | ActiveXObject {
   }
 }
 
-function setDefault(obj: Record<string, string>, key: string, value: string): void {
-  obj[key] = obj[key] || value
-}
-
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop(): void { }
 
@@ -57,7 +53,7 @@ function object2FormData(obj: object): string {
 
 class HttpRequest {
   private isTimeout: boolean;
-  private timeoutFlag: any;
+  private timeoutFlag: number;
 
   public constructor() {
     this.isTimeout = false;
