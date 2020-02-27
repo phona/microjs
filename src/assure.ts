@@ -12,8 +12,20 @@ interface Handler<T> {
   (arg: T): Assure<T> | T | void;
 }
 
+interface Resolve<T> {
+  (arg: T | null): NewAssure<T> | T | void;
+}
+
+interface Reject<T> {
+  (arg: Error | null): NewAssure<T> | T | void;
+}
+
 class NewAssure<T> {
-  private value: T | Error | null;
+  private value: T;
+  private error: Error;
+  private children: NewAssure<T>[]
+  private onResolved: Resolve<T>;
+  private onRejected: Reject<T>;
 
   public constructor(
     private routine: (
@@ -21,25 +33,14 @@ class NewAssure<T> {
       reject: (error: Error) => void
     ) => void
   ) {
+    this.onResolved = null;
+    this.onRejected = null;
+    this.children = [];
     this.value = null;
+    this.error = null;
   }
 
-  public then(
-    onResolved: undefined | ((arg: T | null) => NewAssure<T> | T | void),
-    onRejected?: undefined | ((arg: Error | null) => NewAssure<T> | T | void)
-  ): NewAssure<T> {
-    if (this.value === null) {
-      try {
-        this.routine((arg: T) => {
-          this.value = arg
-        }, (e: Error) => {
-          this.value = e
-        })
-      } catch (e) {
-        this.value = e
-      }
-    }
-
+  private process() {
     try {
       if (this.value instanceof Error) {
         const result = onRejected(this.value)
@@ -63,6 +64,46 @@ class NewAssure<T> {
     }
   }
 
+  private resolve(arg: T) {
+    this.children.forEach(child => {
+      try {
+        const result = child.onResolved(this.value)
+      } catch (e) {
+        child.children.forEach(subchild => {
+          const subresult = subchild.onRejected(e)
+        })
+      }
+    });
+  }
+
+  public then(
+    onResolved: Resolve<T>,
+    onRejected?: Reject<T>
+  ): NewAssure<T> {
+    this.onResolved = onResolved
+    this.onRejected = onRejected
+
+    if (this.value === null) {
+      try {
+        this.routine((arg: T) => {
+          this.value = arg
+          this.children.forEach(child => {
+            try {
+              child.onResolved(this.value)
+            } catch (e) {
+
+            }
+          })
+        }, (e: Error) => {
+          this.error = e
+        })
+      } catch (e) {
+        this.error = e
+      }
+    }
+    return this
+  }
+
   public catch(onError: ((arg: Error | null) => NewAssure<T> | T | void)): NewAssure<T> {
     try {
       if (this.value instanceof Error) {
@@ -72,7 +113,7 @@ class NewAssure<T> {
         }
         return new NewAssure(resolve => resolve(result))
       }
-    } catch(e) {
+    } catch (e) {
       return new NewAssure<T>((resolve, reject) => reject(e))
     }
     return this
@@ -217,9 +258,9 @@ export function post(url: string, data?: string | Record<string, string | number
 }
 
 export function assure<T>(func: (
-      resolve: (value: T | void) => void,
-      reject: (error: Error) => void
-    ) => void): NewAssure<T> {
+  resolve: (value: T | void) => void,
+  reject: (error: Error) => void
+) => void): NewAssure<T> {
   return new NewAssure<T>(func)
 }
 
