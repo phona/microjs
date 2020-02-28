@@ -41,7 +41,7 @@
         "--config",
         "./jest.config.js",
         "-t",
-        "new assure v2"
+        "assure.normalUse"
       ]
     }
   ]

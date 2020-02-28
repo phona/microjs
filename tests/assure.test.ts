@@ -2,31 +2,49 @@ import assure from "../src/assure"
 import HttpError from '../src/helps/http-error'
 import mock from 'xhr-mocklet'
 
-test('normal use', done => {
-  assure.wrap<number>(
-    function () {
+test('assure.normalUse', done => {
+  // 0 1
+  const a1 = assure.wrap<number>((resolve) => {
+    setTimeout(() => {
+      console.log(1)
+      resolve(1)
+    }, 500)
+  })
+
+  // 1 2
+  const a2 = a1.then((arg) => {
+    console.log(2)
+    expect(arg).toBe(1)
+    // 6
+    return assure.wrap((resolve) => {
       setTimeout(() => {
-        this.resolve(1)
-        expect(this.state).toEqual(1)
+        resolve(2)
       }, 500)
-    }
-  )
-    .then(
-      function (arg): void {
-        expect(arg).toBe(1)
-        setTimeout(() => {
-          this.resolve(2)
-          expect(this.state).toEqual(1)
-        }, 500)
-      }
-    )
-    .then(
-      function (arg) {
-        expect(arg).toBe(2)
-        expect(this.state).toEqual(0)
-        done()
-      }
-    )
+    })
+  })
+
+  const a3 = a2.then(arg => {
+    console.log(3)
+    expect(arg).toBe(2)
+    // 7
+    const a = assure.wrap<number>((resolve) => {
+      setTimeout(() => {
+        resolve(3)
+      }, 500)
+    })
+    console.log(a)
+    return a
+  })
+
+  a3.then((arg) => {
+    console.log(4)
+    expect(arg).toBe(3)
+    done()
+  }).catch(error => {
+    console.error(error)
+    done()
+  })
+
 })
 
 test('with error v1', done => {
@@ -81,7 +99,7 @@ test('with error v2', done => {
     }
   )
     .then(
-      function(arg) {
+      function (arg) {
         expect(arg).toBe(1)
         setTimeout(() => {
           this.reject(new Error("haha"))
@@ -89,11 +107,11 @@ test('with error v2', done => {
       }
     )
     .then(
-      function(arg) {
+      function (arg) {
         expect(arg).not.toBe(2);
         done();
       },
-      function(e) {
+      function (e) {
         expect(e.message).toBe("haha");
         done();
       }
@@ -204,55 +222,20 @@ test('get api with error', done => {
 
 test('get api chain', done => {
   assure.get('http://localhost/api/test')
-    .then(function(content) {
+    .then(function (content) {
       expect(content).toEqual(JSON.stringify({
         lastName: 'John',
         firstName: 'Smith'
       }))
       return assure.get('http://localhost/api/test')
     })
-    .then(function(content) {
+    .then(function (content) {
       expect(content).toEqual(JSON.stringify({
         lastName: 'John',
         firstName: 'Smith'
       }))
       done()
     })
-})
-
-test('new assure v1', done => {
-  assure.assure<number>((resolve, reject) => {
-    resolve(1)
-  }).then(value => {
-    expect(value).toBe(1)
-    done()
-  })
-})
-
-test('new assure v2', done => {
-  assure.assure<number>((resolve, reject) => {
-    resolve(1)
-  }).then(value => {
-    expect(value).toBe(1)
-    return assure.assure<number>((resolve) => {
-      resolve(2)
-    })
-  }).then(value => {
-    expect(value).toBe(2)
-    done()
-  })
-})
-
-test('new assure v2', done => {
-  assure.assure<number>((resolve, reject) => {
-    reject(new Error("haha"))
-  }).then(v => {
-    expect(v).not.toBe("haha")
-    done()
-  }, e => {
-    expect(e.message).toBe("haha")
-    done()
-  })
 })
 
 /*

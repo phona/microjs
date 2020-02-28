@@ -36,7 +36,7 @@ mock.post('http://localhost/api/error', (req, res) => {
 mock.get('http://localhost/api/timeout', (req, res) => res.timeout(true));
 mock.post('http://localhost/api/timeout', (req, res) => res.timeout(true));
 
-test('get normal use', done => {
+test('get normal_use', done => {
   request({
     url: 'http://localhost/api/test',
 
