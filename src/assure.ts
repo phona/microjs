@@ -27,107 +27,134 @@ const noop = (): void => undefined
 type AssureResult<T> = Assure<T> | T | Error | void
 
 class Assure<T> {
-  private children: {
-    assure: Assure<T>;
-    onResolved: Resolver<T>;
-    onRejected: Rejecter<T>;
-  }[]
+  private children: Assure<T>[]
   private numb: number
-  private result: AssureResult<T>
-  private state: STATE
+  private _result: AssureResult<T>
+  private _state: STATE
+  private onResolved: Resolver<T>
+  private onRejected: Rejecter<T>
 
   constructor(private asyncfn: AsyncFn<T>) {
+    if (typeof asyncfn !== "function") {
+      throw new TypeError(`Assure resolver ${asyncfn} is not a function`)
+    }
+
     this.children = []
     this.numb = numb++
-    this.result = null
-    this.state = STATE.PENDING
+    this._result = null
+    this._state = STATE.PENDING
+    this.onResolved = null
+    this.onRejected = null
   }
 
-  private pipe(onResolved: Resolver<T>, onRejected: Rejecter<T>): void {
+  public get state(): STATE {
+    return this._state
+  }
+
+  public get result(): AssureResult<T> {
+    return this._result
+  }
+
+  private pipe(next: Assure<T>): void {
     this.then(
-      arg => onResolved(arg),
-      error => onRejected(error)
+      arg => {
+        next._state = STATE.FULFILLED
+        next._result = arg
+        next.children.forEach(child => child.process(arg))
+      },
+      e => {
+        next._state = STATE.REJECTED
+        next._result = e
+        next.children.forEach(child => child.process(e))
+      }
     )
   }
 
   private process(result: AssureResult<T>): void {
+    this._result = result
     if (result instanceof Assure) {
-      this.children.forEach(child => {
-        child.assure.asyncfn = result.asyncfn
-        result.pipe(child.onResolved, child.onRejected)
-        child.assure.invokeAsyncFn()
-      })
-      return
-    }
-
-    this.children.forEach(child => {
-      try {
-        if (result instanceof Error) {
-          if (child.onRejected && typeof child.onRejected === "function") {
-            let subResult: AssureResult<T>
-            try {
-              subResult = child.onRejected(result)
-            } catch (e) {
-              subResult = e
-            }
-            child.assure.process(subResult);
-          } else {
-            child.assure.children.forEach(subChild => {
-              subChild.assure.process(result)
-            })
+      result.pipe(this)
+    } else if (result instanceof Error) {
+      let subResult: AssureResult<T> = result
+      if (this.onRejected && typeof this.onRejected === "function") {
+        try {
+          subResult = this.onRejected(result)
+          if (subResult instanceof Assure) {
+            subResult.pipe(this)
+            return
           }
-        } else {
-          if (child.onResolved && typeof child.onResolved === "function") {
-            let subResult: AssureResult<T>
-            try {
-              subResult = child.onResolved(result)
-            } catch (e) {
-              subResult = e
-            }
-            child.assure.process(subResult);
-          } else {
-            child.assure.children.forEach(subChild => {
-              subChild.assure.process(result)
-            })
-          }
+          this._result = subResult
+        } catch (e) {
+          this._result = subResult = e
         }
-      } catch (e) {
-        const subResult = child.onRejected(e)
-        child.assure.process(subResult);
       }
-    })
+      this._state = STATE.REJECTED
+      this.children.forEach(subChild => subChild.process(subResult))
+    } else {
+      let subResult: AssureResult<T> = result
+      if (this.onResolved && typeof this.onResolved === "function") {
+        try {
+          subResult = this.onResolved(result)
+          this._state = STATE.FULFILLED
+          if (subResult instanceof Assure) {
+            subResult.pipe(this)
+            return
+          } else if (subResult !== undefined) {
+            this._result = subResult
+          }
+        } catch (e) {
+          this._result = subResult = e
+          this._state = STATE.REJECTED
+        }
+      } else {
+        this._state = STATE.FULFILLED
+      }
+      this.children.forEach(subChild => subChild.process(subResult))
+    }
   }
 
   private invokeAsyncFn(): void {
-    if (this.result !== null) {
-      this.process(this.result)
-      return
-    }
+    if (this.asyncfn !== noop) {
+      const resolve = (arg: T): void => {
+        this._state = STATE.FULFILLED
+        this.process(arg)
+      }
+      const reject = (error: Error): void => {
+        this._state = STATE.REJECTED
+        this.process(error)
+      }
 
-    const resolve = (arg: T): void => {
-      this.result = arg
-      this.state = STATE.FULFILLED
-      this.process(arg)
+      try {
+        this.asyncfn(resolve, reject)
+      } catch (e) {
+        this._state = STATE.REJECTED
+        this.process(e)
+      }
     }
-    const reject = (error: Error): void => {
-      this.result = error
-      this.state = STATE.REJECTED
-      this.process(error)
-    }
-    this.asyncfn(resolve, reject)
   }
 
   public then(onResolved: Resolver<T>, onRejected?: Rejecter<T>): Assure<T> {
     const assure = new Assure<T>(noop)
-    this.children.push({ assure, onResolved, onRejected })
-    this.invokeAsyncFn()
+    assure.onResolved = onResolved
+    assure.onRejected = onRejected
+    this.children.push(assure)
+    if (this._state !== STATE.PENDING) {
+      assure.process(this._result)
+    } else {
+      this.invokeAsyncFn()
+    }
     return assure
   }
 
   public catch(onError: Rejecter<T>): Assure<T> {
     const assure = new Assure<T>(noop)
-    this.children.push({ assure, onResolved: undefined, onRejected: onError })
-    this.invokeAsyncFn()
+    assure.onRejected = onError
+    this.children.push(assure)
+    if (this._state !== STATE.PENDING) {
+      assure.process(this._result)
+    } else {
+      this.invokeAsyncFn()
+    }
     return assure
   }
 }
@@ -137,12 +164,12 @@ export function wrap<T>(fn: AsyncFn<T>): Assure<T> {
 }
 
 export function get(url: string, params?: string | Record<string, string | number | object>, config?: object): Assure<string> {
-  return wrap<string>(function () {
+  return wrap<string>((resolve, reject) => {
     const option = {
       url,
       data: params,
-      success: (content: string): void => this.resolve(content),
-      error: (status: number, content: string): void => this.reject(new HttpError(status, content))
+      success: (content: string): void => resolve(content),
+      error: (status: number, content: string): void => reject(new HttpError(status, content))
     }
     for (const k in config) {
       option[k] = config[k]
@@ -152,13 +179,13 @@ export function get(url: string, params?: string | Record<string, string | numbe
 }
 
 export function post(url: string, data?: string | Record<string, string | number | object>, config?: object): Assure<string> {
-  return wrap<string>(function () {
+  return wrap<string>((resolve, reject) => {
     const option = {
       url,
       data: data,
       method: 'POST',
-      success: (content: string): void => this.resolve(content),
-      error: (status: number, content: string): void => this.reject(new HttpError(status, content))
+      success: (content: string): void => resolve(content),
+      error: (status: number, content: string): void => reject(new HttpError(status, content))
     }
     for (const k in config) {
       option[k] = config[k]
@@ -167,4 +194,4 @@ export function post(url: string, data?: string | Record<string, string | number
   })
 }
 
-export default { wrap, get, post, HttpError }
+export default { wrap, get, post, HttpError, STATE }

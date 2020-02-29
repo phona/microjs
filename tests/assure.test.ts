@@ -2,19 +2,64 @@ import assure from "../src/assure"
 import HttpError from '../src/helps/http-error'
 import mock from 'xhr-mocklet'
 
-test('assure.normalUse', done => {
-  // 0 1
-  const a1 = assure.wrap<number>((resolve) => {
+test('assure.normalUseV1', done => {
+  const a0 = assure.wrap<number>((resolve) => {
     setTimeout(() => {
-      console.log(1)
       resolve(1)
     }, 500)
   })
 
-  // 1 2
-  const a2 = a1.then((arg) => {
-    console.log(2)
+  const a1 = a0.then((arg) => {
     expect(arg).toBe(1)
+    expect(a0.state).toBe(assure.STATE.FULFILLED)
+    expect(a1.state).toBe(assure.STATE.PENDING)
+    done()
+  })
+})
+
+test('assure.normalUseV11', done => {
+  const err = new Error("Test")
+
+  const a0 = assure.wrap<number>((resolve, reject) => {
+    setTimeout(() => {
+      reject(err)
+    }, 500)
+  })
+
+  const a1 = a0.then(() => {
+    done.fail()
+  })
+
+  const a2 = a1.catch(error => {
+    expect(error).toEqual(err)
+    expect(a0.state).toBe(assure.STATE.REJECTED)
+    expect(a0.result).toBe(err)
+    expect(a1.state).toBe(assure.STATE.REJECTED)
+    expect(a1.result).toBe(err)
+    expect(a2.state).toBe(assure.STATE.PENDING)
+    expect(a2.result).toBe(err)
+  })
+
+  a2.then(() => {
+    expect(a2.state).toBe(assure.STATE.REJECTED)
+    done()
+  }).catch(e => {
+    console.error(e)
+    done.fail(e)
+  })
+})
+
+test('assure.normalUseV2', done => {
+  // 0 1
+  const a0 = assure.wrap<number>((resolve) => {
+    setTimeout(() => {
+      resolve(1)
+    }, 500)
+  })
+
+  const a1 = a0.then((arg) => {
+    expect(arg).toBe(1)
+    expect(a0.state).toBe(assure.STATE.FULFILLED)
     // 6
     return assure.wrap((resolve) => {
       setTimeout(() => {
@@ -23,158 +68,283 @@ test('assure.normalUse', done => {
     })
   })
 
-  const a3 = a2.then(arg => {
-    console.log(3)
+  const a2 = a1.then(arg => {
     expect(arg).toBe(2)
+    expect(a1.state).toBe(assure.STATE.FULFILLED)
     // 7
-    const a = assure.wrap<number>((resolve) => {
+    return assure.wrap((resolve) => {
       setTimeout(() => {
         resolve(3)
       }, 500)
     })
-    console.log(a)
-    return a
   })
 
-  a3.then((arg) => {
-    console.log(4)
+  const a3 = a2.then((arg) => {
+    expect(a2.state).toBe(assure.STATE.FULFILLED)
     expect(arg).toBe(3)
     done()
-  }).catch(error => {
-    console.error(error)
-    done()
   })
 
+  a3.catch(error => {
+    console.error(error)
+    expect(error).not.toBeInstanceOf(Error)
+    done()
+  })
+  // 5
 })
 
-test('with error v1', done => {
-  assure.wrap(
-    function () {
+test('assure.errorV1', done => {
+  const err = new Error("Test")
+  const a1 = assure.wrap<number>((resolve) => {
+    resolve(1)
+  })
+
+  const a2 = a1.then((arg) => {
+    expect(arg).toBe(1)
+
+    return assure.wrap((resolve, reject) => {
+      try {
+        throw err
+      } catch (e) {
+        reject(e)
+      }
+    })
+  })
+
+  const a3 = a2.then((arg) => {
+    // Invoking this function is not allowd
+    expect(arg).not.toBeNull()
+  }, (error) => {
+    // Invoking this function is not allowd
+    expect(error).toBeInstanceOf(Error)
+    throw error
+  })
+
+  const a4 = a3.catch((arg) => {
+    expect(a1.state).toBe(assure.STATE.FULFILLED)
+    expect(a2.state).toBe(assure.STATE.REJECTED)
+    expect(a3.state).toBe(assure.STATE.REJECTED)
+    expect(arg).toBe(err)
+  }).catch(e => expect(e).toBe(err))
+  expect(a4.result).toBe(undefined)
+  expect(a4.state).toBe(assure.STATE.FULFILLED)
+  done()
+})
+
+test('assure.errorV2', done => {
+  const err = new Error("Test")
+
+  const a1 = assure.wrap<number>((resolve, reject) => {
+    resolve(1)
+  })
+
+  const a2 = a1.then((arg) => {
+    expect(arg).toBe(1)
+
+    return assure.wrap((resolve, reject) => {
+      try {
+        throw err
+      } catch (e) {
+        reject(e)
+      }
+    })
+  })
+
+  const a3 = a2.then((arg) => {
+    // Invoking this function is not allowd
+    expect(arg).not.toBeNull()
+  })
+
+  const a4 = a3.catch((arg) => {
+    expect(a1.state).toBe(assure.STATE.FULFILLED)
+    expect(a2.state).toBe(assure.STATE.REJECTED)
+    expect(a3.state).toBe(assure.STATE.REJECTED)
+    expect(arg).toBeInstanceOf(Error)
+  }).catch(e => done(e))
+
+  expect(a4.state).toBe(assure.STATE.FULFILLED)
+  done()
+})
+
+test('assure.errorV3', done => {
+  const err = new Error("Test")
+
+  const a1 = assure.wrap<number>((resolve, reject) => {
+    setTimeout(() => {
+      reject(err)
+    }, 500)
+  })
+
+  const a2 = a1.then(() => {
+    done.fail()
+  })
+
+  const a3 = a2.then(() => {
+    done.fail()
+  })
+
+  const a4 = a3.catch((arg) => {
+    expect(a1.state).toBe(assure.STATE.REJECTED)
+    expect(a2.state).toBe(assure.STATE.REJECTED)
+    expect(a3.state).toBe(assure.STATE.REJECTED)
+    expect(a4.state).toBe(assure.STATE.PENDING)
+    expect(arg).toBe(err)
+  }).catch(e => done(e))
+  done()
+})
+
+test('assure.errorV4', done => {
+  const err = new Error("Test")
+
+  const a1 = assure.wrap<number>((resolve, reject) => {
+    setTimeout(() => {
+      resolve(1)
+    }, 500)
+  })
+
+  const a2 = a1.then((arg) => {
+    expect(arg).toBe(1)
+    return assure.wrap((resolve, reject) => {
       setTimeout(() => {
-        this.resolve(1)
-        expect(this.state).toEqual(1)
+        reject(err)
       }, 500)
+    })
+  })
+
+  const a3 = a2.then(() => {
+    done.fail();
+  }, (e) => {
+    expect(a1.state).toBe(assure.STATE.FULFILLED)
+    expect(a2.state).toBe(assure.STATE.REJECTED)
+    expect(a3.state).toBe(assure.STATE.PENDING)
+    expect(e).toBe(err);
+  }).catch(e => done(e))
+  done();
+})
+
+test('assure.errorV5', done => {
+  const err = new Error("Test")
+
+  const a1 = assure.wrap<number>((resolve, reject) => {
+    reject(err)
+  })
+
+  const a2 = a1.catch(error => {
+    expect(error).toBe(err)
+    expect(a1.state).toBe(assure.STATE.REJECTED)
+  }).catch(e => done(e))
+  expect(a2.state).toBe(assure.STATE.FULFILLED)
+  done()
+})
+
+test('assure.withChildren', done => {
+  const main = assure.wrap((resolve) => {
+    resolve(1)
+  })
+
+  expect(main.state).toEqual(assure.STATE.PENDING)
+
+  const sub00 = main.then((arg) => {
+    expect(arg).toBe(1)
+
+    return assure.wrap((resolve) => {
+      resolve(2)
+    })
+  })
+
+  expect(main.state).toEqual(assure.STATE.FULFILLED)
+  expect(main.result).toEqual(1)
+
+  expect(sub00.result).toEqual(2)
+  expect(sub00.state).toEqual(assure.STATE.FULFILLED)
+
+  const sub01 = sub00.then((arg) => {
+    expect(arg).toBe(2)
+    expect(main.state).toBe(assure.STATE.FULFILLED)
+    expect(sub00.state).toBe(assure.STATE.FULFILLED)
+  }).catch(e => {
+    done(e)
+  })
+
+  expect(sub01.state).toBe(assure.STATE.FULFILLED)
+
+  const sub10 = main.then(arg => {
+    expect(arg).toBe(1)
+
+    return assure.wrap((resolve) => {
+      resolve(3)
+    })
+  })
+
+  expect(main.state).toEqual(assure.STATE.FULFILLED)
+  expect(main.result).toEqual(1)
+
+  expect(sub10.result).toEqual(3)
+  expect(sub10.state).toEqual(assure.STATE.FULFILLED)
+
+  const sub11 = sub10.then(arg => {
+    expect(arg).toBe(3)
+    expect(main.state).toBe(assure.STATE.FULFILLED)
+    expect(sub10.state).toBe(assure.STATE.FULFILLED)
+  }).catch(e => {
+    done(e)
+  })
+
+  expect(sub11.state).toBe(assure.STATE.FULFILLED)
+  done()
+})
+
+test('assure.returnAssure', done => {
+  const main = assure.wrap<number>((resolve) => {
+    resolve(1)
+  })
+
+  const sub00 = main.then((arg) => {
+    expect(arg).toBe(1)
+
+    return assure.wrap((resolve) => {
+      resolve(2)
+    })
+  }).catch(e => done(e))
+
+  expect(sub00.result).toEqual(2)
+  expect(sub00.state).toEqual(assure.STATE.FULFILLED)
+  done()
+})
+
+test('assure.ReuseV1', done => {
+  assure.wrap<number>((resolve) => {
+    for (let i = 0; i < 2; i++) {
+      resolve(i)
     }
-  )
-    .then(
-      function (arg) {
-        expect(arg).toBe(1)
-        setTimeout(() => {
-          try {
-            throw new Error("Test")
-          } catch (e) {
-            this.reject(e)
-            expect(this.state).toEqual(2)
-          }
-        }, 500)
-      }
-    )
-    .then(
-      function (arg) {
-        // Invoking this function is not allowd
-        expect(arg).not.toBeNull()
-      }
-    )
-    .then(
-      function (arg) {
-        // Invoking this function is not allowd
-        expect(arg).not.toBeNull()
-      }
-    )
-    .catch(
-      function (arg) {
-        expect(arg).toBeInstanceOf(Error)
-        expect(this.state).toEqual(0)
+  }).then((arg) => {
+    switch (arg) {
+      case 0:
+        break;
+      case 1:
         done()
-      }
-    )
+        break
+    }
+  })
 })
 
-test('with error v2', done => {
-  assure.wrap<number>(
-    function () {
-      setTimeout(() => {
-        this.resolve(1)
-      }, 500)
-    }
-  )
-    .then(
-      function (arg) {
-        expect(arg).toBe(1)
-        setTimeout(() => {
-          this.reject(new Error("haha"))
-        }, 500)
-      }
-    )
-    .then(
-      function (arg) {
-        expect(arg).not.toBe(2);
-        done();
-      },
-      function (e) {
-        expect(e.message).toBe("haha");
-        done();
-      }
-    )
-})
+test('assure.chainV1', done => {
+  const err = new Error()
 
-test('with children', done => {
-  const main = assure.wrap(
-    function () {
-      this.resolve(1)
-    }
-  )
+  const a0 = assure.wrap<number>((resolve) => {
+    throw err
+  }).catch(e => {
+    return assure.wrap((resolve) => {
+      resolve(1)
+    })
+  }).then((arg) => {
+    expect(arg).toBe(1)
+    done()
+  }).catch(e => expect(e).not.toBe(err))
 
-  main
-    .then(
-      function (arg) {
-        expect(arg).toEqual(1)
-        this.resolve(2)
-      }
-    )
-    .then(
-      function (arg) {
-        expect(arg).toEqual(2)
-      }
-    )
-
-  main
-    .then(
-      function (arg) {
-        expect(arg).toEqual(1)
-        this.resolve(3)
-      }
-    )
-    .then(
-      function (arg) {
-        expect(arg).toEqual(3)
-        done()
-      }
-    )
-})
-
-test('reuse', done => {
-  assure.wrap<number>(
-    function () {
-      console.log("running main")
-      for (let i = 0; i < 2; i++) {
-        this.resolve(i)
-      }
-    }
-  ).then(
-    function (arg) {
-      console.log(arg)
-      switch (arg) {
-        case 0:
-          break;
-        case 1:
-          break;
-        case 2:
-          done()
-          break
-      }
-    }
-  )
+  expect(a0.state).toBe(assure.STATE.FULFILLED)
+  expect(a0.result).toBe(1)
+  done()
 })
 
 mock.setup()
@@ -189,7 +359,7 @@ mock.get('http://localhost/api/test', (req, res) => {
     });
 });
 
-test('get api normal use', done => {
+test('assure.getAPINormalUse', done => {
   assure.get('http://localhost/api/test')
     .then(content => {
       expect(content).toEqual(JSON.stringify({
@@ -205,7 +375,7 @@ mock.get('http://localhost/api/error', (req, res) => {
     .status(500)
 });
 
-test('get api with error', done => {
+test('assure.getAPIWithError', done => {
   assure.get('http://localhost/api/error')
     .then(content => {
       expect(content).toEqual(JSON.stringify({
@@ -220,7 +390,7 @@ test('get api with error', done => {
     })
 })
 
-test('get api chain', done => {
+test('assure.getAPIChain', done => {
   assure.get('http://localhost/api/test')
     .then(function (content) {
       expect(content).toEqual(JSON.stringify({

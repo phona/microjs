@@ -36,7 +36,7 @@ mock.post('http://localhost/api/error', (req, res) => {
 mock.get('http://localhost/api/timeout', (req, res) => res.timeout(true));
 mock.post('http://localhost/api/timeout', (req, res) => res.timeout(true));
 
-test('get normal_use', done => {
+test('request.getNormalUse', done => {
   request({
     url: 'http://localhost/api/test',
 
@@ -50,7 +50,7 @@ test('get normal_use', done => {
   })
 })
 
-test('post normal use', done => {
+test('request.postNormalUse', done => {
   request({
     url: 'http://localhost/api/test',
     headers: {
@@ -69,7 +69,7 @@ test('post normal use', done => {
   })
 })
 
-test('get timeout', done => {
+test('request.getTimeout', done => {
   request({
     url: 'http://localhost/api/timeout',
     headers: {
@@ -84,7 +84,7 @@ test('get timeout', done => {
   })
 })
 
-test('post timeout', done => {
+test('request.postTimeout', done => {
   request({
     url: 'http://localhost/api/timeout',
     headers: {
@@ -101,7 +101,7 @@ test('post timeout', done => {
   })
 })
 
-test('get error', done => {
+test('request.getError', done => {
   request({
     url: 'http://localhost/api/error',
     headers: {
@@ -116,7 +116,7 @@ test('get error', done => {
   })
 })
 
-test('post error', done => {
+test('request.postError', done => {
   request({
     url: 'http://localhost/api/error',
     headers: {
@@ -143,7 +143,7 @@ mock.get('http://localhost/api/v1/querystring?user=admin&password=admin', (req, 
     });
 });
 
-test('get querystring v1', done => {
+test('request.getQueryStringV1', done => {
   request({
     url: 'http://localhost/api/v1/querystring',
     data: {
@@ -174,7 +174,7 @@ mock.post('http://localhost/api/v1/payload', (req, res) => {
     });
 });
 
-test('post payload v1', done => {
+test('request.postPayloadV1', done => {
   request({
     url: 'http://localhost/api/v1/payload',
     method: 'post',
@@ -196,7 +196,7 @@ test('post payload v1', done => {
   })
 })
 
-test('post payload v2', done => {
+test('request.postPayloadV2', done => {
   request({
     url: 'http://localhost/api/v1/payload',
     method: 'post',
@@ -215,7 +215,7 @@ test('post payload v2', done => {
   })
 })
 
-test('post payload v3', done => {
+test('request.postPayloadV3', done => {
   assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
     headers: {
       'Content-Type': 'application/json'
@@ -229,7 +229,7 @@ test('post payload v3', done => {
   })
 })
 
-test('post payload v4', done => {
+test('request.postPayloadV4', done => {
   const err = new Error("haha");
 
   assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
@@ -244,7 +244,7 @@ test('post payload v4', done => {
   })
 })
 
-test('post payload v5', done => {
+test('request.postPayloadV5', done => {
   const err = new Error("haha");
 
   assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {

@@ -41,7 +41,7 @@
         "--config",
         "./jest.config.js",
         "-t",
-        "assure.normalUse"
+        "assure.errorV5"
       ]
     }
   ]
