@@ -10,7 +10,7 @@ export default class HttpError extends Error {
     }
     super(describe)
     this.status = status
-    this.describe = describe
-    Object.setPrototypeOf(this, HttpError.prototype);
+    this.describe = describe;
+    (<any>Object).setPrototypeOf(this, HttpError.prototype);
   }
 }

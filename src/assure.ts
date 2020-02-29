@@ -29,8 +29,8 @@ type AssureResult<T> = Assure<T> | T | Error | void
 class Assure<T> {
   private children: Assure<T>[]
   private numb: number
-  private _result: AssureResult<T>
-  private _state: STATE
+  private result: AssureResult<T>
+  private state: STATE
   private onResolved: Resolver<T>
   private onRejected: Rejecter<T>
 
@@ -41,37 +41,29 @@ class Assure<T> {
 
     this.children = []
     this.numb = numb++
-    this._result = null
-    this._state = STATE.PENDING
+    this.result = null
+    this.state = STATE.PENDING
     this.onResolved = null
     this.onRejected = null
-  }
-
-  public get state(): STATE {
-    return this._state
-  }
-
-  public get result(): AssureResult<T> {
-    return this._result
   }
 
   private pipe(next: Assure<T>): void {
     this.then(
       arg => {
-        next._state = STATE.FULFILLED
-        next._result = arg
+        next.state = STATE.FULFILLED
+        next.result = arg
         next.children.forEach(child => child.process(arg))
       },
       e => {
-        next._state = STATE.REJECTED
-        next._result = e
+        next.state = STATE.REJECTED
+        next.result = e
         next.children.forEach(child => child.process(e))
       }
     )
   }
 
   private process(result: AssureResult<T>): void {
-    this._result = result
+    this.result = result
     if (result instanceof Assure) {
       result.pipe(this)
     } else if (result instanceof Error) {
@@ -83,31 +75,31 @@ class Assure<T> {
             subResult.pipe(this)
             return
           }
-          this._result = subResult
+          this.result = subResult
         } catch (e) {
-          this._result = subResult = e
+          this.result = subResult = e
         }
       }
-      this._state = STATE.REJECTED
+      this.state = STATE.REJECTED
       this.children.forEach(subChild => subChild.process(subResult))
     } else {
       let subResult: AssureResult<T> = result
       if (this.onResolved && typeof this.onResolved === "function") {
         try {
           subResult = this.onResolved(result)
-          this._state = STATE.FULFILLED
+          this.state = STATE.FULFILLED
           if (subResult instanceof Assure) {
             subResult.pipe(this)
             return
           } else if (subResult !== undefined) {
-            this._result = subResult
+            this.result = subResult
           }
         } catch (e) {
-          this._result = subResult = e
-          this._state = STATE.REJECTED
+          this.result = subResult = e
+          this.state = STATE.REJECTED
         }
       } else {
-        this._state = STATE.FULFILLED
+        this.state = STATE.FULFILLED
       }
       this.children.forEach(subChild => subChild.process(subResult))
     }
@@ -116,18 +108,18 @@ class Assure<T> {
   private invokeAsyncFn(): void {
     if (this.asyncfn !== noop) {
       const resolve = (arg: T): void => {
-        this._state = STATE.FULFILLED
+        this.state = STATE.FULFILLED
         this.process(arg)
       }
       const reject = (error: Error): void => {
-        this._state = STATE.REJECTED
+        this.state = STATE.REJECTED
         this.process(error)
       }
 
       try {
         this.asyncfn(resolve, reject)
       } catch (e) {
-        this._state = STATE.REJECTED
+        this.state = STATE.REJECTED
         this.process(e)
       }
     }
@@ -138,8 +130,8 @@ class Assure<T> {
     assure.onResolved = onResolved
     assure.onRejected = onRejected
     this.children.push(assure)
-    if (this._state !== STATE.PENDING) {
-      assure.process(this._result)
+    if (this.state !== STATE.PENDING) {
+      assure.process(this.result)
     } else {
       this.invokeAsyncFn()
     }
@@ -150,8 +142,8 @@ class Assure<T> {
     const assure = new Assure<T>(noop)
     assure.onRejected = onError
     this.children.push(assure)
-    if (this._state !== STATE.PENDING) {
-      assure.process(this._result)
+    if (this.state !== STATE.PENDING) {
+      assure.process(this.result)
     } else {
       this.invokeAsyncFn()
     }
