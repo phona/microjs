@@ -8,8 +8,8 @@ enum STATE {
 }
 
 // Throwable
-interface Resolver<T> {
-  (arg: T | void): Assure<T> | T | void;
+interface Resolver<T, V> {
+  (arg: T | void): Assure<V> | V | void;
 }
 
 interface Rejecter<T> {
@@ -26,13 +26,14 @@ const noop = (): void => undefined
 
 type AssureResult<T> = Assure<T> | T | Error | void
 
+// T: OutputType
 class Assure<T> {
-  private children: Assure<T>[]
+  private children: Assure<any>[]
   private numb: number
-  private result: AssureResult<T>
+  private result: AssureResult<any>
   private state: STATE
-  private onResolved: Resolver<T>
-  private onRejected: Rejecter<T>
+  private onResolved: Resolver<T, any> | Resolver<any, T>
+  private onRejected: Rejecter<any>
 
   constructor(private asyncfn: AsyncFn<T>) {
     if (typeof asyncfn !== "function") {
@@ -125,8 +126,8 @@ class Assure<T> {
     }
   }
 
-  public then(onResolved: Resolver<T>, onRejected?: Rejecter<T>): Assure<T> {
-    const assure = new Assure<T>(noop)
+  public then<V>(onResolved: Resolver<T, V>, onRejected?: Rejecter<V>): Assure<V> {
+    const assure = new Assure<V>(noop)
     assure.onResolved = onResolved
     assure.onRejected = onRejected
     this.children.push(assure)
@@ -138,8 +139,8 @@ class Assure<T> {
     return assure
   }
 
-  public catch(onError: Rejecter<T>): Assure<T> {
-    const assure = new Assure<T>(noop)
+  public catch<V>(onError: Rejecter<V>): Assure<V> {
+    const assure = new Assure<V>(noop)
     assure.onRejected = onError
     this.children.push(assure)
     if (this.state !== STATE.PENDING) {
