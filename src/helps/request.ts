@@ -53,7 +53,7 @@ function object2FormData(obj: object): string {
 
 class HttpRequest {
   private isTimeout: boolean;
-  private timeoutFlag: number;
+  private timeoutFlag: ReturnType<typeof setTimeout>;
 
   public constructor() {
     this.isTimeout = false;

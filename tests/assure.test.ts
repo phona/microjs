@@ -237,6 +237,21 @@ test('assure.errorV5', done => {
   done()
 })
 
+test('assure.errorV6', done => {
+  const err = new Error("Test")
+
+  const a1 = assure.wrap<number>((resolve, reject) => {
+    throw err
+  })
+
+  a1.catch(error => {
+    expect(error).toBe(err)
+    expect(a1['state']).toBe(assure.STATE.REJECTED)
+    done()
+  })
+})
+
+
 test('assure.withChildren', done => {
   const main = assure.wrap((resolve) => {
     resolve(1)
@@ -385,7 +400,7 @@ test('assure.getAPIWithError', done => {
     })
     .catch((err: HttpError) => {
       expect(err.status).toEqual(500)
-      expect(err.describe).toEqual('INTERNAL SERVER ERROR')
+      expect(err.describe).not.toEqual("")
       done()
     })
 })

@@ -20,7 +20,7 @@ interface AsyncFn<T> {
   (resolve: (arg: T) => void, reject: (error: Error) => void): void;
 }
 
-let numb = 0;
+// const numb = 0;
 
 const noop = (): void => undefined
 
@@ -29,8 +29,8 @@ type AssureResult<T> = Assure<T> | T | Error | void
 // T: OutputType
 class Assure<T> {
   private children: Assure<any>[]
-  private numb: number
-  private result: AssureResult<any>
+  // private numb: number
+  private result: AssureResult<T>
   private state: STATE
   private onResolved: Resolver<T, any> | Resolver<any, T>
   private onRejected: Rejecter<any>
@@ -41,7 +41,7 @@ class Assure<T> {
     }
 
     this.children = []
-    this.numb = numb++
+    // this.numb = numb++
     this.result = null
     this.state = STATE.PENDING
     this.onResolved = null
@@ -63,7 +63,7 @@ class Assure<T> {
     )
   }
 
-  private process(result: AssureResult<T>): void {
+  private process(result: AssureResult<any>): void {
     this.result = result
     if (result instanceof Assure) {
       result.pipe(this)
