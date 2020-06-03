@@ -1,6 +1,6 @@
 import mock from 'xhr-mocklet'
 import request from '../src/helps/request'
-import assure from '../src/assure'
+import assure from '../assure'
 
 mock.setup()
 

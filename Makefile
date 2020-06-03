@@ -24,7 +24,7 @@ out/test/index.js: index.ts $(tsfiles)
 	@$(TSC) --build tsconfig.test.json
 
 test:
-	@$(NPX) jest
+	@$(NPX) jest --detectOpenHandles
 
 clean:
 	@rm -rf ./out

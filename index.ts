@@ -1,4 +1,3 @@
-import assure from './src/assure'
-import HttpError from './src/helps/http-error'
+import assure from "./src/assure"
 
-export default { assure, HttpError }
+export default { assure }

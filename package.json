@@ -1,10 +1,13 @@
 {
   "name": "@phona/microjs",
-  "version": "1.1.1",
-  "main": "index.ts",
-  "types": "index.d.ts",
+  "version": "1.2.3",
   "license": "MIT",
   "test": "jest",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/phona/microjs.git"
+  },
+  "main": "index.ts",
   "devDependencies": {
     "@types/jest": "^24.0.25",
     "@typescript-eslint/eslint-plugin": "^2.14.0",

@@ -1,4 +1,4 @@
-import assure from "../src/assure"
+import assure from '../assure'
 import HttpError from '../src/helps/http-error'
 import mock from 'xhr-mocklet'
 
