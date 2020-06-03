@@ -216,7 +216,9 @@ test('request.postPayloadV2', done => {
 })
 
 test('request.postPayloadV3', done => {
-  assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
+  assure.post({
+    url:'http://localhost/api/v1/payload',
+    data: 'user=admin&password=admin',
     headers: {
       'Content-Type': 'application/json'
     }
@@ -232,7 +234,9 @@ test('request.postPayloadV3', done => {
 test('request.postPayloadV4', done => {
   const err = new Error("haha");
 
-  assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
+  assure.post({
+    url: 'http://localhost/api/v1/payload',
+    data: 'user=admin&password=admin',
     headers: {
       'Content-Type': 'application/json'
     }
@@ -247,7 +251,9 @@ test('request.postPayloadV4', done => {
 test('request.postPayloadV5', done => {
   const err = new Error("haha");
 
-  assure.post('http://localhost/api/v1/payload', 'user=admin&password=admin', {
+  assure.post({
+    url: 'http://localhost/api/v1/payload',
+    data: 'user=admin&password=admin',
     headers: {
       'Content-Type': 'application/json'
     }

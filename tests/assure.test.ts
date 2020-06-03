@@ -375,7 +375,7 @@ mock.get('http://localhost/api/test', (req, res) => {
 });
 
 test('assure.getAPINormalUse', done => {
-  assure.get('http://localhost/api/test')
+  assure.get({ url: 'http://localhost/api/test' })
     .then(content => {
       expect(content).toEqual(JSON.stringify({
         lastName: 'John',
@@ -391,7 +391,7 @@ mock.get('http://localhost/api/error', (req, res) => {
 });
 
 test('assure.getAPIWithError', done => {
-  assure.get('http://localhost/api/error')
+  assure.get({ url: 'http://localhost/api/error' })
     .then(content => {
       expect(content).toEqual(JSON.stringify({
         lastName: 'John',
@@ -406,13 +406,13 @@ test('assure.getAPIWithError', done => {
 })
 
 test('assure.getAPIChain', done => {
-  assure.get('http://localhost/api/test')
+  assure.get({ url: 'http://localhost/api/test' })
     .then(function (content) {
       expect(content).toEqual(JSON.stringify({
         lastName: 'John',
         firstName: 'Smith'
       }))
-      return assure.get('http://localhost/api/test')
+      return assure.get({ url: 'http://localhost/api/test' })
     })
     .then(function (content) {
       expect(content).toEqual(JSON.stringify({
