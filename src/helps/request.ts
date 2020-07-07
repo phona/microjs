@@ -1,100 +1,90 @@
-interface ActiveXObject {
-  readonly readyState: number;
-  readonly status: number;
-  readonly responseText: string;
-  readonly statusText: string;
+import { JSONObject } from './defines'
 
-  onreadystatechange: ((this: XMLHttpRequest, ev: Event) => any) | null;
+type ActiveXObject = {
+  readonly readyState: number
+  readonly status: number
+  readonly responseText: string
+  readonly statusText: string
 
-  abort(): void;
+  onreadystatechange: ((this: XMLHttpRequest, ev: Event) => any) | null
 
-  setRequestHeader(name: string, value: string): void;
+  abort(): void
 
-  send(body?: Document | BodyInit | null): void;
+  setRequestHeader(name: string, value: string): void
 
-  open(method: string, url: string): void;
+  send(body?: Document | BodyInit | null): void
 
-  open(method: string, url: string, async: boolean, username?: string | null, password?: string | null): void;
+  open(method: string, url: string, async?: boolean, username?: string | null, password?: string | null): void
 }
 
 function getRequest(): XMLHttpRequest | ActiveXObject {
   if (window.XMLHttpRequest) {
-    return new XMLHttpRequest();
+    return new XMLHttpRequest()
   } else {
-    //遍历IE中不同版本的ActiveX对象
-    const versions = ["Microsoft", "msxm3", "msxml2", "msxml1"];
-    for (let i = 0; i < versions.length; i++) {
+    // 遍历IE中不同版本的ActiveX对象
+    const versions = ['Microsoft', 'msxm3', 'msxml2', 'msxml1']
+    for (const version of versions) {
       try {
-        const version = versions[i] + ".XMLHTTP";
-        return new ActiveXObject(version);
-      } catch (e) { }
+        return new ActiveXObject(version + '.XMLHTTP') as ActiveXObject
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
     }
+    return null
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-function noop(): void { }
+const noop = (): void => undefined
 
-function object2Querystring(obj: object): string {
+function JSONObject2QueryString(obj: JSONObject): string {
   const result = []
   for (const key in obj) {
-    result.push(`${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
+    result.push(`${encodeURIComponent(key)}=${encodeURIComponent(obj[key].toString())}`)
   }
-  return `?${result.join('&')}`
+  return result.join('&')
 }
 
-function object2FormData(obj: object): string {
+function JSONObject2FormData(obj: JSONObject): string {
   const result = []
   for (const key in obj) {
-    result.push(`${key}=${obj[key]}`)
+    result.push(`${key}=${obj[key].toString()}`)
   }
   return `${result.join('&')}`
 }
 
 class HttpRequest {
-  private isTimeout: boolean;
-  private timeoutFlag: ReturnType<typeof setTimeout>;
+  private isTimeout: boolean
+  private timeoutFlag: ReturnType<typeof setTimeout>
 
   public constructor() {
-    this.isTimeout = false;
-    this.timeoutFlag = null;
+    this.isTimeout = false
+    this.timeoutFlag = null
   }
 
-  public send(params: {
-    url: string;
-    method?: string;
-    headers?: Record<string, string>;
-    data?: string | Record<string, string | number | object>;
-    async?: boolean;
-    timeout?: number;
-    success?: (content: string) => void;
-    error?: (status: number, content: string) => void;
-  }): void {
+  public send(params: Config): void {
     // Any variable used more than once is var'd here because
     // minification will munge the variables whereas it can't munge
     // the object access.
     const headers = params.headers || {}
-      , method = (params.method || 'GET').toUpperCase()
-      , async = params.async === undefined ? true : params.async
-      , success = params.success || noop
-      , error = params.error || noop
-      , timeout = params.timeout
+    const method = (params.method || 'GET').toUpperCase()
+    const async = params.async === undefined ? true : params.async
+    const success = params.success || noop
+    const error = params.error || noop
+    const timeout = params.timeout
 
     const contentType = headers['Content-Type']
-    if (!contentType)
-      headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
+    if (!contentType) headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
 
     let url: string
-      , body: string
+    let body: string
     if (method === 'GET') {
       const data = params.data || ''
-      const str = typeof data === 'string' ? data : object2Querystring(data)
+      const str = typeof data === 'string' ? data : '?' + JSONObject2QueryString(data)
       url = params.data ? params.url + str : params.url
       body = null
     } else {
       const data = params.data || ''
       url = params.url
-      body = typeof data === 'string' ? data : object2FormData(data)
+      body = typeof data === 'string' ? data : JSONObject2FormData(data)
     }
 
     const req = getRequest()
@@ -102,17 +92,17 @@ class HttpRequest {
     req.onreadystatechange = (): void => {
       if (req.readyState === 4) {
         if (timeout !== undefined) {
-          //由于执行abort()方法后，有可能触发onreadystatechange事件，
-          //所以设置一个timeout_bool标识，来忽略中止触发的事件。
+          // 由于执行abort()方法后，有可能触发onreadystatechange事件，
+          // 所以设置一个timeout_bool标识，来忽略中止触发的事件。
           if (this.isTimeout) {
-            return;
+            return
           }
-          clearTimeout(this.timeoutFlag);
+          clearTimeout(this.timeoutFlag)
         }
         if ((req.status >= 200 && req.status < 300) || req.status === 304) {
-          success(req.responseText);
+          success(req.responseText)
         } else {
-          error(req.status, req.statusText);
+          error(req.status, req.statusText)
         }
       }
     }
@@ -130,22 +120,26 @@ class HttpRequest {
     if (timeout) {
       this.timeoutFlag = setTimeout(() => {
         this.isTimeout = true
-        req && req.abort()
+        if (req) {
+          req.abort()
+        }
       }, timeout)
     }
   }
 }
 
-export default function (params: {
-  url: string;
-  method?: string;
-  headers?: Record<string, string>;
-  data?: string | Record<string, string | number | object>;
-  async?: boolean;
-  timeout?: number;
-  success?: (content: string) => void;
-  error?: (status: number, content: string) => void;
-}): void {
+export type Config = {
+  url: string
+  method?: string
+  headers?: Record<string, string>
+  data?: JSONObject | string
+  async?: boolean
+  timeout?: number
+  success?: (content: string) => void
+  error?: (status: number, content: string) => void
+}
+
+export default function (params: Config): void {
   const req = new HttpRequest()
   req.send(params)
 }

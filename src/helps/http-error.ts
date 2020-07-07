@@ -1,6 +1,6 @@
 export default class HttpError extends Error {
-  status: number;
-  describe: string;
+  status: number
+  describe: string
 
   constructor(status: number, describe: string) {
     if (!describe) {
@@ -8,6 +8,6 @@ export default class HttpError extends Error {
     }
     super(describe)
     this.status = status
-    this.describe = describe;
+    this.describe = describe
   }
 }

@@ -100,7 +100,6 @@ test('assure.chainV1', done => {
     .then(v => v)
     .catch(e => console.error(e))
     .then(v => {
-      console.log(v)
       expect(v).toEqual(1)
       done()
     })
