@@ -93,6 +93,19 @@ test('assure.normalUseV2', done => {
   // 5
 })
 
+test('assure.chainV1', done => {
+  assure.wrap<number>(resolve => {
+    resolve(1)
+  })
+    .then(v => v)
+    .catch(e => console.error(e))
+    .then(v => {
+      console.log(v)
+      expect(v).toEqual(1)
+      done()
+    })
+})
+
 test('assure.errorV1', done => {
   const err = new Error("Test")
   const a1 = assure.wrap<number>((resolve) => {
