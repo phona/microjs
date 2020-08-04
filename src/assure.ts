@@ -1,6 +1,7 @@
 import request from './helps/request'
 import HttpError from './helps/http-error'
 import { JSONObject } from './helps/defines'
+import { includes } from './helps/arrays'
 
 enum STATE {
   PENDING = 0,
@@ -151,6 +152,22 @@ export function wrap<T>(fn: AsyncFn<T>): Assure<T> {
   return new Assure(fn)
 }
 
+export function all(assures: Assure<unknown>[]): Assure<unknown[]> {
+  return new Assure<unknown[]>((resolve, reject) => {
+    const results: unknown[] = []
+    assures.forEach((assure, index) => {
+      assure.then(result => {
+        results[index] = result
+        if (results.length === assures.length && !includes(results, undefined)) {
+          resolve(results)
+        }
+      }).catch(e => {
+        reject(e)
+      })
+    })
+  })
+}
+
 export function get(config: {
   url: string
   headers?: Record<string, string>
@@ -195,4 +212,4 @@ export function post(config: {
   })
 }
 
-export default { wrap, get, post, HttpError, STATE }
+export default { wrap, all, get, post, HttpError, STATE }
