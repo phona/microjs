@@ -93,6 +93,62 @@ test('assure.normalUseV2', done => {
   // 5
 })
 
+test('assure.wraps.v1', done => {
+  const a0 = assure.wrap<number>(resolve0 => {
+    return assure.wrap<number>(resolve1 => {
+      setTimeout(() => {
+        resolve1(1)
+      }, 500)
+    }).then<number>((result: number) => {
+      resolve0(result + 1)
+    })
+  })
+
+  a0.then(data => {
+    expect(data).toEqual(2)
+    done()
+  })
+})
+
+test('assure.wraps.v2', done => {
+  assure.wrap<number[]>(resolve => {
+    resolve([])
+  }).then((results: number[]) => {
+    const asr = assure.wrap<number>(resolve => {
+      setTimeout(() => {
+        resolve(1)
+      }, 500)
+    }).then((data: number) => {
+      results.push(data)
+      return results
+    })
+    return asr
+  }).then((results: number[]) => {
+    expect(results).toEqual([1])
+    return assure.wrap<number>(resolve => {
+      setTimeout(() => {
+        resolve(2)
+      }, 50)
+    }).then((data: number) => {
+      results.push(data)
+      return results
+    })
+  }).then((results: number[]) => {
+    expect(results).toEqual([1, 2])
+    return assure.wrap<number>(resolve => {
+      setTimeout(() => {
+        resolve(3)
+      }, 70)
+    }).then((data: number) => {
+      results.push(data)
+      return results
+    })
+  }).then(results => {
+    expect(results).toEqual([1, 2, 3])
+    done()
+  })
+})
+
 test('assure.all.v1', done => {
   assure.all(
     [1, 2, 3].map(v => assure.wrap(resolve => resolve(v)))

@@ -44,7 +44,12 @@ class Assure<T> {
     this.onRejected = null
   }
 
+  public getResult(): AssureResult<T> {
+    return this.result
+  }
+
   private pipe(next: Assure<T>): void {
+    next.state = this.state
     this.then(
       (arg) => {
         next.state = STATE.FULFILLED

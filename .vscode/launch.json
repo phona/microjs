@@ -41,7 +41,7 @@
         "--config",
         "./jest.config.js",
         "-t",
-        "assure.errorV5"
+        "assure.wraps.v2"
       ]
     }
   ]
