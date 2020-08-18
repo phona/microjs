@@ -15,7 +15,8 @@ out/prod: index.ts $(tsfiles)
 
 dist/%.min.js: out/prod/%.js
 	@mkdir -p dist
-	@$(NPX) browserify $< --standalone $* -p tinyify -o $@
+	@$(NPX) browserify $< --standalone $* -o $@
+	@$(NPX) uglify-js $@ --ie8 -c -o $@
 
 run: out/test/index.js
 	@$(NODE) $<

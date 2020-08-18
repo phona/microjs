@@ -242,7 +242,7 @@ test('request.postPayloadV4', done => {
     }
   }).then((content) => {
     throw err;
-  }).catch(error => {
+  }).capture(error => {
     expect(error).toEqual(err)
     done()
   })
@@ -261,7 +261,7 @@ test('request.postPayloadV5', done => {
     throw err;
   }).then((content) => {
     return "1";
-  }).catch(error => {
+  }).capture(error => {
     expect(error).toEqual(err)
     done()
   })

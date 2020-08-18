@@ -30,7 +30,7 @@ test('assure.normalUseV11', done => {
     done.fail()
   })
 
-  const a2 = a1.catch(error => {
+  const a2 = a1.capture(error => {
     expect(error).toEqual(err)
     expect(a0['state']).toBe(assure.STATE.REJECTED)
     expect(a0['result']).toBe(err)
@@ -43,7 +43,7 @@ test('assure.normalUseV11', done => {
   a2.then(() => {
     expect(a2['state']).toBe(assure.STATE.REJECTED)
     done()
-  }).catch(e => {
+  }).capture(e => {
     console.error(e)
     done.fail(e)
   })
@@ -85,7 +85,7 @@ test('assure.normalUseV2', done => {
     done()
   })
 
-  a3.catch(error => {
+  a3.capture(error => {
     console.error(error)
     expect(error).not.toBeInstanceOf(Error)
     done()
@@ -178,7 +178,7 @@ test('assure.chainV1', done => {
     resolve(1)
   })
     .then(v => v)
-    .catch(e => console.error(e))
+    .capture(e => console.error(e))
     .then(v => {
       expect(v).toEqual(1)
       done()
@@ -212,12 +212,12 @@ test('assure.errorV1', done => {
     throw error
   })
 
-  const a4 = a3.catch((arg) => {
+  const a4 = a3.capture((arg) => {
     expect(a1['state']).toBe(assure.STATE.FULFILLED)
     expect(a2['state']).toBe(assure.STATE.REJECTED)
     expect(a3['state']).toBe(assure.STATE.REJECTED)
     expect(arg).toBe(err)
-  }).catch(e => expect(e).toBe(err))
+  }).capture(e => expect(e).toBe(err))
   expect(a4['result']).toBe(undefined)
   expect(a4['state']).toBe(assure.STATE.FULFILLED)
   done()
@@ -247,12 +247,12 @@ test('assure.errorV2', done => {
     expect(arg).not.toBeNull()
   })
 
-  const a4 = a3.catch((arg) => {
+  const a4 = a3.capture((arg) => {
     expect(a1['state']).toBe(assure.STATE.FULFILLED)
     expect(a2['state']).toBe(assure.STATE.REJECTED)
     expect(a3['state']).toBe(assure.STATE.REJECTED)
     expect(arg).toBeInstanceOf(Error)
-  }).catch(e => done(e))
+  }).capture(e => done(e))
 
   expect(a4['state']).toBe(assure.STATE.FULFILLED)
   done()
@@ -275,13 +275,13 @@ test('assure.errorV3', done => {
     done.fail()
   })
 
-  const a4 = a3.catch((arg) => {
+  const a4 = a3.capture((arg) => {
     expect(a1['state']).toBe(assure.STATE.REJECTED)
     expect(a2['state']).toBe(assure.STATE.REJECTED)
     expect(a3['state']).toBe(assure.STATE.REJECTED)
     expect(a4['state']).toBe(assure.STATE.PENDING)
     expect(arg).toBe(err)
-  }).catch(e => done(e))
+  }).capture(e => done(e))
   done()
 })
 
@@ -310,7 +310,7 @@ test('assure.errorV4', done => {
     expect(a2['state']).toBe(assure.STATE.REJECTED)
     expect(a3['state']).toBe(assure.STATE.PENDING)
     expect(e).toBe(err);
-  }).catch(e => done(e))
+  }).capture(e => done(e))
   done();
 })
 
@@ -321,10 +321,10 @@ test('assure.errorV5', done => {
     reject(err)
   })
 
-  const a2 = a1.catch(error => {
+  const a2 = a1.capture(error => {
     expect(error).toBe(err)
     expect(a1['state']).toBe(assure.STATE.REJECTED)
-  }).catch(e => done(e))
+  }).capture(e => done(e))
   expect(a2['state']).toBe(assure.STATE.FULFILLED)
   done()
 })
@@ -336,7 +336,7 @@ test('assure.errorV6', done => {
     throw err
   })
 
-  a1.catch(error => {
+  a1.capture(error => {
     expect(error).toBe(err)
     expect(a1['state']).toBe(assure.STATE.REJECTED)
     done()
@@ -369,7 +369,7 @@ test('assure.withChildren', done => {
     expect(arg).toBe(2)
     expect(main['state']).toBe(assure.STATE.FULFILLED)
     expect(sub00['state']).toBe(assure.STATE.FULFILLED)
-  }).catch(e => {
+  }).capture(e => {
     done(e)
   })
 
@@ -393,7 +393,7 @@ test('assure.withChildren', done => {
     expect(arg).toBe(3)
     expect(main['state']).toBe(assure.STATE.FULFILLED)
     expect(sub10['state']).toBe(assure.STATE.FULFILLED)
-  }).catch(e => {
+  }).capture(e => {
     done(e)
   })
 
@@ -412,7 +412,7 @@ test('assure.returnAssure', done => {
     return assure.wrap((resolve) => {
       resolve(2)
     })
-  }).catch(e => done(e))
+  }).capture(e => done(e))
 
   expect(sub00['result']).toEqual(2)
   expect(sub00['state']).toEqual(assure.STATE.FULFILLED)
@@ -440,14 +440,14 @@ test('assure.chainV1', done => {
 
   const a0 = assure.wrap<number>((resolve) => {
     throw err
-  }).catch(e => {
+  }).capture(e => {
     return assure.wrap((resolve) => {
       resolve(1)
     })
   }).then((arg) => {
     expect(arg).toBe(1)
     done()
-  }).catch(e => expect(e).not.toBe(err))
+  }).capture(e => expect(e).not.toBe(err))
 
   expect(a0['state']).toBe(assure.STATE.FULFILLED)
   expect(a0['result']).toBe(1)
@@ -490,7 +490,7 @@ test('assure.getAPIWithError', done => {
         firstName: 'Smith'
       }))
     })
-    .catch((err: HttpError) => {
+    .capture((err: HttpError) => {
       expect(err.status).toEqual(500)
       expect(err.describe).not.toEqual("")
       done()

@@ -21,6 +21,7 @@
     "tinyify": "^2.5.2",
     "ts-jest": "^24.2.0",
     "typescript": "^3.7.4",
+    "uglify-js": "^3.10.1",
     "xhr-mocklet": "^1.2.3"
   },
   "dependencies": {}

@@ -1,7 +1,9 @@
 import request from './helps/request'
 import HttpError from './helps/http-error'
 import { JSONObject } from './helps/defines'
-import { includes } from './helps/arrays'
+import { includes, forEach } from './helps/arrays'
+
+const VERSION = 2.1
 
 enum STATE {
   PENDING = 0,
@@ -54,12 +56,12 @@ class Assure<T> {
       (arg) => {
         next.state = STATE.FULFILLED
         next.result = arg
-        next.children.forEach((child) => child.process(arg))
+        forEach(next.children, (child) => child.process(arg))
       },
       (e) => {
         next.state = STATE.REJECTED
         next.result = e
-        next.children.forEach((child) => child.process(e))
+        forEach(next.children, (child) => child.process(e))
       },
     )
   }
@@ -83,7 +85,7 @@ class Assure<T> {
         }
       }
       this.state = STATE.REJECTED
-      this.children.forEach((subChild) => subChild.process(subResult))
+      forEach(this.children, (subChild) => subChild.process(subResult))
     } else {
       let subResult: AssureResult<T> = result as T
       if (this.onResolved && typeof this.onResolved === 'function') {
@@ -103,7 +105,7 @@ class Assure<T> {
       } else {
         this.state = STATE.FULFILLED
       }
-      this.children.forEach((subChild) => subChild.process(subResult))
+      forEach(this.children, (subChild) => subChild.process(subResult))
     }
   }
 
@@ -140,7 +142,7 @@ class Assure<T> {
     return assure
   }
 
-  public catch<V>(onError: Rejecter<V>): Assure<V> {
+  public capture<V>(onError: Rejecter<V>): Assure<V> {
     const assure = new Assure<V>(noop)
     assure.onRejected = onError
     this.children.push(assure)
@@ -160,15 +162,17 @@ export function wrap<T>(fn: AsyncFn<T>): Assure<T> {
 export function all(assures: Assure<unknown>[]): Assure<unknown[]> {
   return new Assure<unknown[]>((resolve, reject) => {
     const results: unknown[] = []
-    assures.forEach((assure, index) => {
-      assure.then(result => {
-        results[index] = result
-        if (results.length === assures.length && !includes(results, undefined)) {
-          resolve(results)
-        }
-      }).catch(e => {
-        reject(e)
-      })
+    forEach(assures, (assure, index) => {
+      void assure
+        .then((result) => {
+          results[index] = result
+          if (results.length === assures.length && !includes(results, undefined)) {
+            resolve(results)
+          }
+        })
+        .capture((e) => {
+          reject(e)
+        })
     })
   })
 }
@@ -217,4 +221,4 @@ export function post(config: {
   })
 }
 
-export default { wrap, all, get, post, HttpError, STATE }
+export default { wrap, all, get, post, HttpError, STATE, VERSION }
