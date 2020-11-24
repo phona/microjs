@@ -11,27 +11,35 @@ enum STATE {
   REJECTED,
 }
 
-// Throwable
-type Resolver<T, V> = (arg: T | void) => Assure<V> | V | void
-
-type Rejecter<T> = (error: Error) => Assure<T> | T | void
-
 type AsyncFn<T> = (resolve: (arg: T) => void, reject: (error: Error) => void) => void
 
 // const numb = 0;
 
 const noop = (): void => undefined
 
-type AssureResult<T> = Assure<T> | T | Error | void
+/**
+* promise like interface back compatible interface but has little different
+* which based on more older version javascript interpreter
+*/
+interface Thenable<T> {
+  then<R1 = T, R2 = never>(onfulfilled?: ((value: T) => R1 | Thenable<R1>) | undefined | null, onrejected?: ((reason: any) => R2 | Thenable<R2>) | undefined | null): Thenable<R1 | R2>;
+  capture<R = never>(onrejected?: ((reason: any) => R | Thenable<R>) | undefined | null): Thenable<T | R>;
+}
+
+type FulfillmentHandler<T, R> = ((value: T) => R | Thenable<R>) | null | undefined;
+
+type RejectionHandler<R> = ((reason: any) => R | Thenable<R>) | null | undefined;
+
+type AssureResult<T> = Thenable<T> | T | undefined | null
 
 // T: OutputType
-class Assure<T> {
+class Assure<T> implements Thenable<T> {
   private children: Assure<unknown>[]
   // private numb: number
   private result: AssureResult<T>
   private state: STATE
-  private onResolved: Resolver<T, unknown> | Resolver<unknown, T>
-  private onRejected: Rejecter<unknown>
+  private onResolved: FulfillmentHandler<T, unknown>
+  private onRejected: RejectionHandler<unknown>
 
   constructor(private asyncfn: AsyncFn<T>) {
     if (typeof asyncfn !== 'function') {
@@ -71,21 +79,20 @@ class Assure<T> {
     if (result instanceof Assure) {
       result.pipe(this)
     } else if (result instanceof Error) {
-      let subResult: AssureResult<T> = result
       if (this.onRejected && typeof this.onRejected === 'function') {
         try {
-          subResult = this.onRejected(result) as T
-          if (subResult instanceof Assure) {
-            subResult.pipe(this)
+          result = this.onRejected(result)
+          if (result instanceof Assure) {
+            result.pipe(this)
             return
           }
-          this.result = subResult
+          this.result = result as T
         } catch (e) {
-          this.result = subResult = e as Error
+          this.result = result = e
         }
       }
       this.state = STATE.REJECTED
-      forEach(this.children, (subChild) => subChild.process(subResult))
+      forEach(this.children, (subChild) => subChild.process(result))
     } else {
       let subResult: AssureResult<T> = result as T
       if (this.onResolved && typeof this.onResolved === 'function') {
@@ -129,10 +136,13 @@ class Assure<T> {
     }
   }
 
-  public then<V>(onResolved: Resolver<T, V>, onRejected?: Rejecter<V>): Assure<V> {
-    const assure = new Assure<V>(noop)
-    assure.onResolved = onResolved
-    assure.onRejected = onRejected
+  public then<R1 = T, R2 = never>(
+    onfulfilled?: ((value: T) => R1 | Thenable<R1>) | undefined | null,
+    onrejected?: ((reason: any) => R2 | Thenable<R2>) | undefined | null
+  ): Thenable<R1 | R2> {
+    const assure = new Assure<R1 | R2>(noop)
+    assure.onResolved = onfulfilled as FulfillmentHandler<unknown, unknown>
+    assure.onRejected = onrejected
     this.children.push(assure)
     if (this.state !== STATE.PENDING) {
       assure.process(this.result)
@@ -142,9 +152,11 @@ class Assure<T> {
     return assure
   }
 
-  public capture<V>(onError: Rejecter<V>): Assure<V> {
-    const assure = new Assure<V>(noop)
-    assure.onRejected = onError
+  public capture<R = never>(
+    onrejected?: ((reason: any) => R | Thenable<R>) | undefined | null
+  ): Thenable<T | R> {
+    const assure = new Assure<R>(noop)
+    assure.onRejected = onrejected
     this.children.push(assure)
     if (this.state !== STATE.PENDING) {
       assure.process(this.result)
@@ -221,4 +233,4 @@ export function post(config: {
   })
 }
 
-export default { wrap, all, get, post, HttpError, STATE, VERSION }
+export default { wrap, all, get, post, HttpError, STATE, VERSION, Assure }

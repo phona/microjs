@@ -99,7 +99,7 @@ test('assure.wraps.v1', done => {
       setTimeout(() => {
         resolve1(1)
       }, 500)
-    }).then<number>((result: number) => {
+    }).then((result) => {
       resolve0(result + 1)
     })
   })
@@ -513,6 +513,8 @@ test('assure.getAPIChain', done => {
       }))
       done()
     })
+
+    new Promise<number>(() => {}).then(() => {return ""}).then()
 })
 
 /*
