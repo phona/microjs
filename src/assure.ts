@@ -21,7 +21,7 @@ const noop = (): void => undefined
 * promise like interface back compatible interface but has little different
 * which based on more older version javascript interpreter
 */
-interface Thenable<T> {
+export interface Thenable<T> {
   then<R1 = T, R2 = never>(onfulfilled?: ((value: T) => R1 | Thenable<R1>) | undefined | null, onrejected?: ((reason: any) => R2 | Thenable<R2>) | undefined | null): Thenable<R1 | R2>;
   capture<R = never>(onrejected?: ((reason: any) => R | Thenable<R>) | undefined | null): Thenable<T | R>;
 }
@@ -233,4 +233,4 @@ export function post(config: {
   })
 }
 
-export default { wrap, all, get, post, HttpError, STATE, VERSION, Assure }
+export default { wrap, all, get, post, HttpError, STATE, VERSION }
